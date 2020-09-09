@@ -40,13 +40,13 @@ double beta,temp,J,h;
 int nstep, nblk, metro, restart;
 
 //functions
-void Input(double);
+void Input(double,int);
 void Reset(int);
 void Accumulate(void);
 void Averages(int);
 void Move(int);
 void ConfFinal(void);
-void Measure(void);
+void Measure(int,int);
 double Boltzmann(int, int);
 int Pbc(int);
 double Error(double,double,int);

@@ -25,14 +25,14 @@ int main()
   ReadInput.close();
   if (restart == 0){ //prima volta in cui faccio girare il codice
   	double tem=2.0;
-  	Input(tem); //Inizialization
+  	Input(tem,restart); //Inizialization
   	for(int iblk=1; iblk <= nblk; ++iblk) //Simulation
   	{
     		Reset(iblk);   //Reset block averages
     		for(int istep=1; istep <= nstep; ++istep)
     		{
      			Move(metro);
-     			Measure();
+     			Measure(iblk,restart);
       			Accumulate(); //Update block averages
     		}
     		Averages(iblk);   //Print results for current block
@@ -43,14 +43,14 @@ int main()
   	for(int t=0; t<31; t++){
   		double tem = 2.0;
   		tem = tem - t*0.05;
-  		Input(tem); //Inizialization
+  		Input(tem,restart); //Inizialization
   		for(int iblk=1; iblk <= nblk; ++iblk) //Simulation
   		{
     			Reset(iblk);   //Reset block averages
     			for(int istep=1; istep <= nstep; ++istep)
     			{
      				Move(metro);
-     				Measure();
+     				Measure(iblk,restart);
       				Accumulate(); //Update block averages
     			}
     			Averages(iblk);   //Print results for current block
@@ -61,7 +61,7 @@ int main()
   return 0;
 }
 
-void Input(double tem) //Ho modificato input in modo che prenda un double, cioè la temperatura
+void Input(double tem,int restart) //Ho modificato input in modo che prenda un double, cioè la temperatura
 {
   ifstream ReadInput;
 
@@ -138,7 +138,8 @@ void Input(double tem) //Ho modificato input in modo che prenda un double, cioè
   	}
   	  		
   	//Evaluate energy etc. of the initial configuration
-  	Measure();
+  	int iblk=0;
+  	Measure(iblk,restart);
   		
   	//Print initial values for the potential energy and virial
   	cout << "Initial energy = " << walker[iu]/(double)nspin << endl;
@@ -208,7 +209,7 @@ double Boltzmann(int sm, int ip)
   return ene;
 }
 
-void Measure()
+void Measure(int iblk,int restart)
 {
   //int bin;
   double u = 0.0, m = 0.0;
@@ -227,6 +228,42 @@ void Measure()
 	walker[ic] = u*u; //mi serve per la capacità termica, che poi calcolo effettivamente in Averages
 	walker[im] = m;
 	walker[ix] = m*m;
+	
+	const int wd=12;
+	ofstream Mag_eq;
+	if(h==0.02){
+    		if(temp==0.5){ 
+    			if(iblk==1){
+    				if(metro==1){
+    					Mag_eq.open("equil.mag.metro",ios::app);
+    				}
+    				else{
+    					Mag_eq.open("equil.mag.gibbs",ios::app);
+    				}
+    				Mag_eq << setw(wd) << iblk << setw(wd)<< temp << setw(wd) << walker[im] << endl;  
+    			}
+    		}
+    	}
+    	Mag_eq.close();
+    	
+    	ofstream Ene_eq;
+    	if(restart == 0){
+	if(h==0.0){
+    		if(temp==2){ 
+    			if(iblk==1){
+    				if(metro==1){
+    					Ene_eq.open("equil.ene.metro",ios::app);
+    				}
+    				else{
+    					Ene_eq.open("equil.ene.gibbs",ios::app);
+    				}
+    				Ene_eq << setw(wd) << iblk << setw(wd)<< temp << setw(wd) << walker[iu] << endl;  
+    			}
+    		}
+    	}
+    	}
+    	Ene_eq.close();
+    	
 }
 
 
@@ -344,6 +381,7 @@ void Averages(int iblk) //Print results for current block
     		}
     		Chi.close();
     	}
+    	
     cout << "----------------------------" << endl << endl;
 }
 
