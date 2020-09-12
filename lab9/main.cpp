@@ -19,7 +19,6 @@ _/    _/  _/_/_/  _/_/_/_/ email: Davide.Galli@unimi.it
 #include <string>
 #include "random.h"
 #include "TSP.h"
-#include "mpi.h"
 
 using namespace std;
 
@@ -47,112 +46,143 @@ int main (int argc, char *argv[]){
       input.close();
    } else cerr << "PROBLEM: Unable to open seed.in, questo" << endl;
 
-	ofstream best_path_quad0, best_half_quad0, final_cities_quad0;
-	ofstream best_path_quad1, best_half_quad1, final_cities_quad1;
-	ofstream best_path_quad2, best_half_quad2, final_cities_quad2;
-	ofstream best_path_quad3, best_half_quad3, final_cities_quad3;
+	ofstream best_path_circ, best_half_circ, final_cities_circ;
+	ofstream best_path_quad, best_half_quad, final_cities_quad;
 
-	best_path_quad0.open("L1_best_path_quad0.out");
-	best_half_quad0.open("L1_best_half_quad0.out");
-	final_cities_quad0.open("final_cities_quad0.out");
+	best_path_circ.open("L1_best_path_circ.out");
+	best_half_circ.open("L1_best_half_circ.out");
+	final_cities_circ.open("final_cities_circ.out");
+	
+	best_path_quad.open("L1_best_path_quad.out");
+	best_half_quad.open("L1_best_half_quad.out");
+	final_cities_quad.open("final_cities_quad.out");
 
-	best_path_quad1.open("L1_best_path_quad1.out");
-	best_half_quad1.open("L1_best_half_quad1.out");
-	final_cities_quad1.open("final_cities_quad1.out");
-
-	best_path_quad2.open("L1_best_path_quad2.out");
-	best_half_quad2.open("L1_best_half_quad2.out");
-	final_cities_quad2.open("final_cities_quad2.out");
-
-	best_path_quad3.open("L1_best_path_quad3.out");
-	best_half_quad3.open("L1_best_half_quad3.out");
-	final_cities_quad3.open("final_cities_quad3.out");
-
-//Creo casualmente le 32 città nel quadrato, mi servono le stesse città per tutte e 4 le popolazioni, le creo prima.
+//CIRCONFERENZA
+//Creo casualmente le 32 città sulla circonferenza.
 	int N = 32;
 	int Npop = 100;
+	double theta = rnd.Rannyu(0,2*M_PI);
+	double s = sin(theta);
+	double r = cos(theta);
+
+//Prima città, la fisso
+	City inizio(r,s);
+	cout << inizio.getx() << " " <<  inizio.gety() << endl;
+	
+//Le altre 31 città
+	std::vector<City> cities;
+	for (int i=0; i<N-1; i++){
+		theta = rnd.Rannyu(0,2*M_PI);
+		s = sin(theta);
+		r = cos(theta);
+		City c(r,s);
+		cout << c.getx() << " " << c.gety() << endl;
+		cities.push_back(c);
+	}
+//Creo il primo individuo
+	Individuo salesman(N, inizio, cities.begin(), cities.end());
+	if (salesman.check()==false){ //false per me vuol dire che non passa nella stessa città
+		//cout <<"ok" << endl;
+	}
+	else{
+		cout <<"Il percorso passa due volte nella stessa città! Non va bene!" << endl;
+	}
+
+//Creo la prima popolazione e la ordino in base a L1
+	Popolazione prima(Npop, rnd, salesman); 
+	prima.sort_L1();
+
+//Generazioni
+	int n_generazioni = 400;	
+	for(int g=0; g<n_generazioni; g++){
+		prima.new_generazione(rnd);
+		//cout << "**** " << g << endl;
+		prima.sort_L1();
+		best_path_circ << g << " " << prima.get_pop()[0].L1() << endl;
+		best_half_circ << g << " " << prima.mean_L1() << endl;
+	}
+	
+	final_cities_circ << prima.get_pop()[0].get_partenza().getx() << " " << prima.get_pop()[0].get_partenza().gety() << endl;
+
+	for (auto j : prima.get_pop()[0].get_percorso()){
+		final_cities_circ << j.getx() << " " << j.gety() << endl;
+	}
+		
+	cout << endl;
+
+	for (auto i : prima.get_pop()){ 			
+		cout << i.L1() << endl;
+		}
+	
+	best_path_circ.close();
+	best_half_circ.close();
+	final_cities_circ.close();
+
+
+	rnd.SaveSeed();
+//QUADRATO
+
+//Prima città, la fisso
 	double x=rnd.Rannyu(-1,+1);
      	double y=rnd.Rannyu(-1,+1);
-	
+     	
 	City inizio_q(x,y);
 	cout << inizio_q.getx() << " " <<  inizio_q.gety() << endl;
 
+//Le altre 31 città
 	std::vector<City> cities_q;
 	for (int i=0; i<N-1; i++){
 		x=rnd.Rannyu(-1,+1);
-       		y=rnd.Rannyu(-1,+1);
+       	y=rnd.Rannyu(-1,+1);
 		City c_q(x,y);
 		cout << c_q.getx() << " " << c_q.gety() << endl;
 		cities_q.push_back(c_q);
 	}
-	//cout << "Ciao" << endl;
 	
-	int size, rank;
-	MPI_Init(&argc,&argv);
-	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-
-//Devo usare 4 core, controllo che siano 4.
-	if (size != 4) {
-		cerr << "ATTENZIONE: servono 4 core, non " << size << endl;
-	}
-
-//Creo il primo individuo che va bee che sia uguale per tutti i core.
+//Primo individuo
 	Individuo salesman_q(N, inizio_q, cities_q.begin(), cities_q.end());
 	if (salesman_q.check()==false){ //false per me vuol dire che non passa nella stessa città
 		//cout <<"ok" << endl;
 	}
 	else{
 		cout <<"Il percorso passa due volte nella stessa città! Non va bene!" << endl;
-	}	
-
-	if(rank==0){
-		for (auto i : salesman_q.get_percorso()){
-			cout << i.getx() << " " << i.gety() << endl;
-		}
 	}
-
-//Ora devo cambiare la coppia di completamento del seme di generatore di numeri casuali in Primes per ogni nodo per avere diverse sequenze stocastiche.
-
-	Random rnd_new; 
-	int seed_new[4];
-   	int p1_new[4];
-	int p2_new[4];
-	ifstream Primes_new("Primes");
-	for(int i=0; i<size; i++){
-   		if (Primes_new.is_open()){
-      			Primes_new >> p1_new[i] >> p2_new[i] ;
-   		} else cerr << "PROBLEM: Unable to open Primes" << endl;
-	}
-   	Primes_new.close();
-
-	ifstream input_new("seed.in");
-	string property_new;
-   	if (input_new.is_open()){
-      		while ( !input_new.eof() ){
-         	input_new >> property_new;
-         		if( property_new == "RANDOMSEED" ){
-            			input_new >> seed_new[0] >> seed_new[1] >> seed_new[2] >> seed_new[3];
-				for(int i=0; i<size; i++){
-					if(rank==i){
-						rnd_new.SetRandom(seed_new,p1_new[i],p2_new[i]);
-					}
-				}
-         		}
-      		}
-      	input_new.close();
-   	} else cerr << "PROBLEM: Unable to open seed.in" << endl;
-
-	Popolazione prima_q(Npop, rnd_new, salesman_q); //ora rnd_new è diverso per ogni core
 	
-	prima_q.sort_L1(); //funziona
-
-	if(rank==0){
-		for (auto i : prima_q.get_pop()){ 
-			cout << i.L1() << endl;
-		}
+//Prima popolazione
+	Popolazione prima_q(Npop, rnd, salesman_q);
+	prima_q.sort_L1();
+	for (auto i : prima_q.get_pop()){ 
+		cout << i.L1() << endl;
 	}
+	
+	n_generazioni = 400;
+	
+	for(int g=0; g<n_generazioni; g++){
+		prima_q.new_generazione(rnd);
+		//cout << "**** " << g << endl;
+		prima_q.sort_L1();
+		best_path_quad << g << " " << prima_q.get_pop()[0].L1() << endl;
+		best_half_quad << g << " " << prima_q.mean_L1() << endl;
+	}
+	
+	final_cities_quad << prima_q.get_pop()[0].get_partenza().getx() << " " << prima_q.get_pop()[0].get_partenza().gety() << endl;
+
+	for (auto j : prima_q.get_pop()[0].get_percorso()){
+		final_cities_quad << j.getx() << " " << j.gety() << endl;
+	}
+		
+	cout << endl;
+
+	for (auto i : prima_q.get_pop()){ 			
+		cout << i.L1() << endl;
+		}
+		
+	best_path_quad.close();
+	best_half_quad.close();
+	final_cities_quad.close();
+/*
+
+
 
 	int n_generazioni = 300;
 	
@@ -456,6 +486,7 @@ int main (int argc, char *argv[]){
 	rnd_new.SaveSeed();
 
 	MPI_Finalize();
+*/
    	return 0;
 }
 
