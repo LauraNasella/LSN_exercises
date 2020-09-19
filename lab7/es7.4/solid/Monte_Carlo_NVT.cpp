@@ -242,8 +242,10 @@ void Measure()
 
 //update of the histogram of g(r)
 	//Modifico
-	bin = int(dr/bin_size); //capisco quale bin devo aumentare
-	walker[igofr + bin] = walker[igofr + bin] +2;
+	if(dr < box/2.0){
+		bin = int(dr/bin_size); //capisco quale bin devo aumentare
+		walker[igofr+bin]+=2;
+	}
 	
      if(dr < rcut)
      {
@@ -268,8 +270,12 @@ void Measure()
     	Epot.close();
     	Pres.close();
 
+	for (int k=igofr; k<igofr+nbins; ++k){
+		int j = k-igofr;
+		double deltaV=(4*pi/3)*(pow((j+1)*bin_size, 3) - pow(j*bin_size, 3));
+		walker[k]/=rho*npart*deltaV;
+	}
 }
-
 
 void Reset(int iblk) //Reset block averages
 {
@@ -338,21 +344,18 @@ void Averages(int iblk) //Print results for current block
 	//nel file gofr: ho N blocchi e in ogni blocco 100bins
 	//nel file gave: medie finali di g(r), quindi ho i 100 valori per il blocco finale
 
-	for (int k=igofr; k<igofr+nbins; k++){
+	for (int k=igofr; k<igofr+nbins; ++k){
 		r = (k-igofr)*bin_size;
 		dr = bin_size;
-		double deltaV = (4/3)*M_PI*(pow((r+dr),3)-pow(r,3));
-		gdir = blk_av[k]/(blk_norm*rho*npart*deltaV);
+		gdir = blk_av[k]/blk_norm;
 		glob_av[k] += gdir;
 		glob_av2[k] += gdir*gdir;
-		err_gdir = Error(glob_av[k],glob_av2[k],iblk);	
-	
+		err_gdir = Error(glob_av[k],glob_av2[k],iblk);
 		Gofr << setw(wd) << iblk <<  setw(wd) << r << setw(wd) << gdir << setw(wd) << glob_av[k]/(double)iblk << setw(wd) << err_gdir << endl;
-		if(iblk==nblk){
+		if(iblk==nblk-1){
       			Gave << setw(wd) << iblk <<  setw(wd) << r << setw(wd) << gdir << setw(wd) << glob_av[k]/(double)iblk << setw(wd) << err_gdir << endl;
       		}
 	}
-		
 
     cout << "----------------------------" << endl << endl;
 

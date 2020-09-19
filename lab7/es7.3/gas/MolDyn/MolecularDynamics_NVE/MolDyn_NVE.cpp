@@ -21,7 +21,7 @@ int main(){
   int nconf = 1;
   nstep = int(nstep/nblk); //Faccio diventare il numero di step totali (dato in input.dat) il numero di step per blocco, mi serve per poter usare Averages 
   
-  for(int iblk=1; iblk <= nblk; iblk++) //Simulation
+  for(int iblk=1; iblk <= nblk; ++iblk) //Simulation
   {
     Reset(iblk);   //Reset block averages
     for(int istep=1; istep <= nstep; ++istep){
@@ -45,26 +45,6 @@ int main(){
   
   return 0;
 }
-/*
-  for(int istep=1; istep <= nstep; ++istep){
-     Move();           //Move particles with Verlet algorithm
-     if(istep%iprint == 0) cout << "Number of time-steps: " << istep << endl;
-     if(istep%10 == 0){
-        Measure();     //Properties measurement
-//        ConfXYZ(nconf);//Write actual configuration in XYZ format //Commented to avoid "filesystem full"! 
-        nconf += 1;
-     }
-  }
-  ConfFinal();         //Write final configuration to restart
-  Average(0);
-  Average(1);
-  Average(2);
-  Average(3);
-  Average(4);
-
-  return 0;
-}
-*/
 
 void Input(void){ //Prepare all stuff for the simulation
   ifstream ReadInput,ReadConf;
@@ -296,11 +276,9 @@ void Measure(){ //Properties measurement
   t = 0.0;
   w = 0.0;
   
-  igofr=5;
-	//reset the hystogram of g(r)
-  for (int k=igofr; k<igofr+nbins; k++){
-  	walker[k]=0.0;
-  }
+//reset the hystogram of g(r)
+  for (int k=igofr; k<igofr+nbins; ++k) walker[k]=0.0;
+  	
 //cycle over pairs of particles
   for (int i=0; i<npart-1; ++i){
     for (int j=i+1; j<npart; ++j){
@@ -312,13 +290,13 @@ void Measure(){ //Properties measurement
      dr = dx*dx + dy*dy + dz*dz;
      dr = sqrt(dr);
 
-	//update of the histogram of g(r)
-	bin = int(dr/bin_size); //capisco quale bin devo aumentare
-	//cout << bin << endl;
-	if(igofr + bin <=105){ 
-		//cout << bin << endl;
-		walker[igofr + bin] = walker[igofr + bin] +2;
+//update of the histogram of g(r)
+
+	if(dr < box/2.0){
+		bin = int(dr/bin_size); //capisco quale bin devo aumentare
+		walker[igofr + bin] += +2;
 	}
+	
      if(dr < rcut){
        vij = 4.0/pow(dr,12) - 4.0/pow(dr,6);
        wij = 1.0/pow(dr,12) - 0.5/pow(dr,6); 
@@ -352,6 +330,12 @@ void Measure(){ //Properties measurement
     Etot.close();
     Pres.close();
 
+	for (int k=igofr; k<igofr+nbins; ++k){
+		int j = k-igofr;
+		double deltaV=(4*M_PI/3)*(pow((j+1)*bin_size, 3) - pow(j*bin_size, 3));
+		walker[k]/=rho*npart*deltaV;
+	}
+	
     return;
 }
 
@@ -393,7 +377,7 @@ double Pbc(double r){  //Algorithm for periodic boundary conditions with side L=
 
 void Reset(int iblk) //Reset block averages
 {
-   n_props=105;
+
    if(iblk == 1)
    {
        for(int i=0; i<n_props; ++i)
@@ -569,7 +553,7 @@ double Error(double sum, double sum2, int iblk)
 
 void Accumulate(void) //Update block averages
 {
-	n_props=105;
+
    for(int i=0; i<n_props; ++i)
    {
      blk_av[i] = blk_av[i] + walker[i];
@@ -592,23 +576,20 @@ void Averages(int iblk) //Print results for current block
 //g(r)
 	//nel file gofr: ho N blocchi e in ogni blocco 100bins
 	//nel file gave: medie finali di g(r), quindi ho i 100 valori per il blocco finale
-	igofr=5;
-	for (int k=igofr; k<igofr+nbins; k++){
+	
+	for (int k=igofr; k<igofr+nbins; ++k){
 		r = (k-igofr)*bin_size;
 		dr = bin_size;
-		double deltaV = (4/3)*M_PI*(pow((r+dr),3)-pow(r,3));
-		gdir = blk_av[k]/(blk_norm*rho*npart*deltaV);
-		glob_av[k] = glob_av[k] + gdir;
-		glob_av2[k] = glob_av2[k] + gdir*gdir;
-		err_gdir = Error(glob_av[k],glob_av2[k],iblk);	
-	
+		gdir = blk_av[k]/blk_norm;
+		glob_av[k] += gdir;
+		glob_av2[k] += gdir*gdir;
+		err_gdir = Error(glob_av[k],glob_av2[k],iblk);
 		Gofr << setw(wd) << iblk <<  setw(wd) << r << setw(wd) << gdir << setw(wd) << glob_av[k]/(double)iblk << setw(wd) << err_gdir << endl;
-		if(iblk==nblk){
+		if(iblk==nblk-1){
       			Gave << setw(wd) << iblk <<  setw(wd) << r << setw(wd) << gdir << setw(wd) << glob_av[k]/(double)iblk << setw(wd) << err_gdir << endl;
       		}
 	}
 		
-
     cout << "----------------------------" << endl << endl;
 
     Gofr.close();
