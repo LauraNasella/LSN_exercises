@@ -68,7 +68,7 @@ int main (int argc, char *argv[]){
     	int n_acc = 0;
     	int n_tot = 0;
     	
-    	double step = 4.5*sigma;
+    	double step = 2.5*sigma;
     	
     	double * H_vec = NULL;
     	double * H_mean = NULL;
@@ -102,7 +102,6 @@ int main (int argc, char *argv[]){
    			file_out1 << pos0 << endl;
    			file_out1 << -pos0 << endl;
    			H_vec[i-M_eq] = H(pos0,mu,sigma);
-   			//cout << pos0 << " " << H_vec[i-M_eq] << endl;
    		}
     	}
     	  
@@ -111,7 +110,6 @@ int main (int argc, char *argv[]){
         	for(int j=0; j<L; j++){
         		int k = j + i*L;
             		sum = sum + H_vec[k];
-            		//cout << H_vec[k] << endl;
         	}
         	H_mean[i] = sum/L;
         	H_mean2[i] = pow(H_mean[i],2);	
@@ -182,10 +180,7 @@ void Metropolis(double * pos0, double *pos_new, int * n_acc, int * n_tot, Random
 
 double H(double x, double mu, double sigma){
 
-	double g_meno = exp(-0.5*pow((x-mu)/sigma,2));		
-	double g_piu = exp(-0.5*pow((x+mu)/sigma,2));		
-
-	double H_psi = 0.5*pow(sigma, -2) * ( (1 - pow((x-mu)/sigma , 2))*g_meno + (1 - pow((x+mu)/sigma , 2))*g_piu ); 
+	double H_psi = 0.5*pow(sigma, -2) * ( (1 - pow((x-mu)/sigma , 2))*exp(-0.5*pow((x-mu)/sigma,2))+ (1 - pow((x+mu)/sigma , 2))*exp(-0.5*pow((x+mu)/sigma,2)) ); 
 
 	return H_psi/psi_trial(x, mu, sigma) + V(x);
 }

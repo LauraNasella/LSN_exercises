@@ -160,20 +160,29 @@ void initialize()
 // to modify its first and second derivatives too !
 double external_potential(double val)
 {
+	/*
 	double k_elastic = 1;
 	return k_elastic*val*val/2.0;
+	*/
+	return pow(val,4)-5./2.*pow(val,2);
 }
 
 double external_potential_prime(double val)
 {
+	/*
 	double k_elastic =1;
 	return k_elastic*val;
+	*/
+	return 4*pow(val,3)-5*val;
 }
 
 double external_potential_second(double val)
 {
+	/*
 	double k_elastic=1;
 	return k_elastic;
+	*/
+	return 12*val*val -5;
 }
 
 // The same applies to the variational Wave Function...
@@ -181,14 +190,24 @@ double external_potential_second(double val)
 // to modify its second derivative below!
 double variationalWaveFunction(double v)
 {
-	return 1.0;
+	//return 1.0;
 	//return exp(-0.5*v*v);
+	
+	double mu = 0.794031;
+	double sigma = 0.632193;
+	return exp(-0.5*pow((v-mu)/sigma,2)) + exp(-0.5*pow((v+mu)/sigma,2));
+	
 }
 
 double variationalWaveFunction_second(double v)
 {
-	return 0;
+	//return 0;
 	//return v*v*exp(-0.5*v*v) - exp(-0.5*v*v);
+		
+	double mu = 0.794031;
+	double sigma = 0.632193;
+	return (pow(sigma, -2))*((-1 + pow((v-mu)/sigma , 2))*exp(-0.5*pow((v-mu)/sigma,2)) + (-1 + pow((v+mu)/sigma , 2))*exp(-0.5*pow((v+mu)/sigma,2)));
+	
 }
 
 void translation()

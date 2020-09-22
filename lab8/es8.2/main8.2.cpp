@@ -17,7 +17,6 @@ double Metropolis_SA(double E_old, double E_new, double beta, Random rnd);
 double V(double x){ return pow(x,4) -2.5*pow(x,2);}
 
 double H(double x, double mu, double sigma);
-//Passo gli argomenti dalla riga di comando: dopo il nome del programma passo mu e sigma
 
 int main (int argc, char *argv[]){
 
@@ -296,12 +295,9 @@ double Metropolis_SA(double E_old, double E_new, double beta, Random rnd){
 	}		
 }
 
-double H(double x, double mu, double sigma){
+double H(double x, double mu, double sigma){		
 
-	double g_meno = exp(-0.5*pow((x-mu)/sigma,2));		
-	double g_piu = exp(-0.5*pow((x+mu)/sigma,2));		
-
-	double H_psi = 0.5*pow(sigma, -2) * ( (1 - pow((x-mu)/sigma , 2))*g_meno + (1 - pow((x+mu)/sigma , 2))*g_piu ); 
+	double H_psi = 0.5*pow(sigma, -2) * ( (1 - pow((x-mu)/sigma , 2))*exp(-0.5*pow((x-mu)/sigma,2)) + (1 - pow((x+mu)/sigma , 2))*exp(-0.5*pow((x+mu)/sigma,2)) ); 
 
 	return H_psi/psi_trial(x, mu, sigma) + V(x);
 }
